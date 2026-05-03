@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="DeviceId" Version="6.11.0" />
       <PackageReference Include="MarkDig" Version="1.1.3" />
       <PackageReference Include="Microsoft.Extensions.http" Version="10.0.7" />
       <PackageReference Include="Newtonsoft.json" Version="13.0.4" />

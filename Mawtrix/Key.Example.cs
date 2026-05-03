@@ -1,7 +1,7 @@
 namespace Mawtrix;
 
-public class Key_Example
+public static class EncKeyExample
 {
-    public static byte[] iv = new byte[16];
-    public static byte[] key = new byte[32];
+    public static byte[] Iv = new byte[16];
+    public static byte[] Key = new byte[32];
 }

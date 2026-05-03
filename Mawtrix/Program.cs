@@ -1,308 +1,248 @@
-﻿using System.Security.Cryptography;
-using Mawtrix.Matrix.Sdk;
+﻿namespace Mawtrix;
+
+using Matrix.Sdk;
 using System.Text.Json;
-using Mawtrix;
-using Mawtrix.Matrix.Sdk.Core.Domain.RoomEvent;
-using Mawtrix.Matrix.Sdk.Core.Infrastructure.Extensions;
-using static Mawtrix.Encryption;
+using Matrix.Sdk.Core.Domain.RoomEvent;
+using Matrix.Sdk.Core.Infrastructure.Extensions;
+using Matrix.Sdk.Core.Infrastructure.Dto.User;
+using States;
+using static Encryption;
+using DeviceId;
 
-var factory = new MatrixClientFactory();
-IMatrixClient client = factory.Create();
 
-Console.WriteLine("Hello");
-Console.WriteLine("Put in your matrix homeserver url: \nTo use previous credentials, type in 'login':");
-string? federationtest = Console.ReadLine();
 
-Uri homeserver;
-string? login;
-string password = "";
-
-string state = "menu";
-string currentRoom = "";
-List<string> messageList = new();
-
-HttpClient httpClient = new HttpClient();
-
-if (federationtest == "login")
+static class Program
 {
-    var data = File.ReadAllText(AppDomain.CurrentDomain.BaseDirectory + "/Data");
-
-    var decrypted = Decrypt(data, Key.key, Key.iv);
+    private static readonly MatrixClientFactory Factory = new MatrixClientFactory();
+    public static readonly IMatrixClient Client = Factory.Create();
+    public static string State = "menu";
+    public static List<dynamic> Rooms = new();
+    public static string CurrentRoom = "";
     
-    var realData = JsonDocument.Parse(decrypted).RootElement;
-    homeserver = new(realData.GetProperty("homeserver").GetString());
-    login = realData.GetProperty("login").GetString();
-    // VERY UNSAFE BUT IDK HOW TO DO IT LITEARLLY
-    password = realData.GetProperty("password").GetString();
-}
-else
-{
-    //var data = new { homeserver = new Uri("https://matrix.org/"), login="test", password="test"};
-    try
-    {
-        string responseBody = await httpClient.GetStringAsync("https://"+federationtest+"/_matrix/federation/v1/version");
-        Console.WriteLine(responseBody);
+    public static readonly Dictionary<string, MatrixProfile> Profiles = new ();
+
+    public static bool Running = true;
+
+    private static readonly Menu MenuState = new Menu();
+    private static readonly Chat ChatState = new Chat();
     
-        homeserver = new("https://" + federationtest);
-    }
-    catch (HttpRequestException e)
+    static async Task Main()
     {
-        try
+        Console.WriteLine("Hello");
+        Console.WriteLine("Put in your matrix homeserver url: \nTo use previous credentials, type in 'login':");
+        string? federationTest = Console.ReadLine();
+
+        Uri homeserver;
+        string? login;
+        string? password = "";
+
+        HttpClient httpClient = new HttpClient();
+
+        if (federationTest == "login")
         {
-            string responseBody =
-                await httpClient.GetStringAsync("https://" + federationtest + "/.well-known/matrix/server");
-            Console.WriteLine(responseBody);
+            var data = await File.ReadAllTextAsync(AppDomain.CurrentDomain.BaseDirectory + "/Data");
 
-            var parsed = JsonDocument.Parse(responseBody);
+            var decrypted = Decrypt(data, EncKey.Key, EncKey.Iv);
 
-            parsed.RootElement.TryGetProperty("m.server", out var server);
-            if (server.GetString() == null) return;
-            
-            // Still in the same try scope so if it errors out it'll catch the exception too
-            await httpClient.GetStringAsync("https://" + server.GetString());
-        
-            homeserver = new("https://" + server.GetString());
-
+            var realData = JsonDocument.Parse(decrypted).RootElement;
+            homeserver = new(realData.GetProperty("homeserver").GetString() ?? "matrix.org");
+            login = realData.GetProperty("login").GetString();
+            password = realData.GetProperty("password").GetString();
         }
-        catch (HttpRequestException a)
+        else
         {
-            Console.WriteLine("Homeserver invalid!");
-            return;
-        }
-    }
-
-    Console.WriteLine(homeserver + " is a valid homeserver!");
-
-    Console.WriteLine("Put in your matrix login:");
-    login = Console.ReadLine();
-
-    if (string.IsNullOrEmpty(login)) return;
-
-    Console.WriteLine("Put in your matrix password:");
-
-    while (true)
-    {
-        ConsoleKeyInfo key = Console.ReadKey(true);
-
-
-        if (key.Key == ConsoleKey.Enter)
-        {
-            break;
-        } else if (key.Key == ConsoleKey.Backspace)
-        {
-            if (password.Length > 0)
+            //var data = new { homeserver = new Uri("https://matrix.org/"), login="test", password="test"};
+            try
             {
-                password = password[..^1];
-                Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
-                Console.Write(" ");
-                Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
+                string responseBody =
+                    await httpClient.GetStringAsync("https://" + federationTest + "/_matrix/federation/v1/version");
+                Console.WriteLine(responseBody);
 
+                homeserver = new("https://" + federationTest);
             }
+            catch (HttpRequestException)
+            {
+                try
+                {
+                    string responseBody =
+                        await httpClient.GetStringAsync("https://" + federationTest + "/.well-known/matrix/server");
+                    Console.WriteLine(responseBody);
+
+                    var parsed = JsonDocument.Parse(responseBody);
+
+                    parsed.RootElement.TryGetProperty("m.server", out var server);
+                    if (server.GetString() == null) return;
+
+                    // Still in the same try scope so if it errors out it'll catch the exception too
+                    await httpClient.GetStringAsync("https://" + server.GetString());
+
+                    homeserver = new("https://" + server.GetString());
+                }
+                catch (HttpRequestException)
+                {
+                    Console.WriteLine("Homeserver invalid!");
+                    return;
+                }
+            }
+
+            Console.WriteLine(homeserver + " is a valid homeserver!");
+
+            Console.WriteLine("Put in your matrix login:");
+            login = Console.ReadLine();
+
+            if (string.IsNullOrEmpty(login)) return;
+
+            Console.WriteLine("Put in your matrix password:");
+
+            while (true)
+            {
+                ConsoleKeyInfo key = Console.ReadKey(true);
+
+
+                if (key.Key == ConsoleKey.Enter)
+                {
+                    break;
+                }
+                else if (key.Key == ConsoleKey.Backspace)
+                {
+                    if (password.Length > 0)
+                    {
+                        password = password[..^1];
+                        Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
+                        Console.Write(" ");
+                        Console.SetCursorPosition(Console.CursorLeft - 1, Console.CursorTop);
+                    }
+                }
+                else if (!char.IsControl(key.KeyChar))
+                {
+                    password += key.KeyChar;
+                    Console.Write("*");
+                }
+            }
+
+
+            if (string.IsNullOrEmpty(password)) return;
+
+
+            var data = new { homeserver, password, login };
+
+            var ser = JsonSerializer.Serialize(data);
+
+            var encrypted = Encrypt(ser, EncKey.Key, EncKey.Iv);
+
+            await File.WriteAllTextAsync(AppDomain.CurrentDomain.BaseDirectory + "/Data", encrypted);
         }
-        else if (!char.IsControl(key.KeyChar))
+
+        if (login != null && password != null)
         {
-            password += key.KeyChar;
-            Console.Write("*");
+            string deviceId = new DeviceIdBuilder().AddMachineName().ToString();
+            
+            await Client.LoginAsync(homeserver, login, password, deviceId);
+            
+
+            Client.OnMatrixRoomEventsReceived += (_, eventArgs) =>
+            {
+                foreach (BaseRoomEvent roomEvent in eventArgs.MatrixRoomEvents)
+                {
+                    //Console.WriteLine($"Type: {roomEvent.GetType().Name}");
+                    if (roomEvent is MembershipEvent)
+                    {
+                        //Console.WriteLine(client.GetRoomName(roomEvent.RoomId));
+                    }
+
+                    if (roomEvent is not TextMessageEvent textMessageEvent)
+                    {
+                        // Console.WriteLine("Not text event");
+                        continue;
+                    }
+
+                    string roomId = textMessageEvent.RoomId;
+                    string senderUserId = textMessageEvent.SenderUserId;
+                    string message = textMessageEvent.Message;
+
+                    if (CurrentRoom == roomId)
+                    {
+                        //Console.WriteLine($"RoomId: {roomId} received message from {senderUserId}: {message}.");
+                        if (!Profiles.ContainsKey(senderUserId))
+                        {
+                            Profiles[senderUserId] = Client.GetUserProfile(senderUserId).Result;
+                        }
+                        ChatState.Add(
+                            $"{Profiles[senderUserId].displayname} ({senderUserId}): {message}");
+                    }
+                }
+            };
+            Console.WriteLine("Successfully logged in as " + login);
         }
-    }
-    
 
-    if (string.IsNullOrEmpty(password)) return;
-
-
-    var data = new { homeserver = homeserver, password = password, login = login };
-
-    var ser = JsonSerializer.Serialize(data);
-
-    var encrypted = Encrypt(ser, Key.key, Key.iv);
-    
-    File.WriteAllText(AppDomain.CurrentDomain.BaseDirectory + "/Data", encrypted);
-}
-
-await client.LoginAsync(homeserver, login, password, "SillyLittleBoy");
-
-client.OnMatrixRoomEventsReceived += (sender, eventArgs) =>
-{
-    foreach (BaseRoomEvent roomEvent in eventArgs.MatrixRoomEvents)
-    {
-        //Console.WriteLine($"Type: {roomEvent.GetType().Name}");
-        if (roomEvent is MembershipEvent)
-        {
-            //Console.WriteLine(client.GetRoomName(roomEvent.RoomId));
-        }
-        if (roomEvent is not TextMessageEvent textMessageEvent)
-        {
-           // Console.WriteLine("Not text event");
-            continue;
-        }
-        
-        string roomId = textMessageEvent.RoomId;
-        string senderUserId = textMessageEvent.SenderUserId;
-        string message = textMessageEvent.Message;
-
-        if (currentRoom == roomId)
-        {
-            //Console.WriteLine($"RoomId: {roomId} received message from {senderUserId}: {message}.");
-            messageList.Add(senderUserId + ": " + message);
-        }
-    }
-};
-Console.WriteLine("Successfully logged in as "+login);
-
-client.Start();
-
-List<dynamic> rooms = new();
+        Client.Start();
 
 //Waiting for the rooms to load
-while (client.JoinedRooms.Length == 0)
-{
-    await Task.Delay(100);
-    Console.WriteLine("Still no rooms.");
-}
-
-httpClient.AddBearerToken(client.Token);
-foreach (var room in client.JoinedRooms)
-{
-    Console.WriteLine(room);
-    Console.WriteLine(homeserver + "_matrix/client/v3/rooms/" + room.Id + "/state");
-    string a = await httpClient.GetStringAsync( homeserver + "_matrix/client/v3/rooms/" + room.Id + "/state" );
-    var parsed = JsonDocument.Parse(a);
-    //Console.WriteLine(parsed.RootElement.GetProperty("name"));
-    //Console.WriteLine(a);
-    string? roomname = null;
-    try
-    {
-        string b = await httpClient.GetStringAsync( homeserver + "_matrix/client/v3/rooms/" + room.Id + "/state/m.room.name" );
-        Console.WriteLine("FOUNDNAMEFOUNDNAME\n\n\n\n");
-        Console.WriteLine(a);
-        roomname = JsonDocument.Parse(b).RootElement.GetProperty("name").ToString();
-    } catch (HttpRequestException) {}
-    rooms.Add(new {instance = room, name = roomname ?? room.Id});
-}
-
-int selected = 0;
-
-string currentInput = "";
-
-void RenderChat()
-{
-    Console.Clear();
-    int messagesToShow = Math.Min(messageList.Count, Console.WindowHeight - 3);
-    for (int i = messageList.Count - messagesToShow; i < messageList.Count; i++)
-    {
-        Console.WriteLine(messageList[i]);
-    }
-    
-    Console.SetCursorPosition(0, Console.WindowHeight - 1);
-    Console.Write(new string(' ', Console.WindowWidth - 1));
-    Console.SetCursorPosition(0, Console.WindowHeight - 1);
-    Console.Write("> " + currentInput);
-}
-
-
-async Task handleInput()
-{
-    while (true)
-    {
-        var key = Console.ReadKey(true);
-        
-        if (key.Key == ConsoleKey.Enter)
+        while (Client.JoinedRooms.Length == 0)
         {
-            if (!string.IsNullOrWhiteSpace(currentInput))
-            {
-                await client.SendMessageAsync(currentRoom, currentInput);
-                currentInput = "";
-                RenderChat();
-            }
-        }
-        else if (key.Key == ConsoleKey.Escape)
-        {
-            currentRoom = "";
-            state = "menu";
-            break;
-        }
-        else if (key.Key == ConsoleKey.Backspace && currentInput.Length > 0)
-        {
-            currentInput = currentInput.Substring(0, currentInput.Length - 1);
-            RenderChat();
-        }
-        else if (!char.IsControl(key.KeyChar))
-        {
-            currentInput += key.KeyChar;
-            RenderChat();
-        }
-    }
-}
-
-async void chatState()
-{
-    while (state == "chat")
-    {
-        currentInput = "";
-    
-        var inputTask = handleInput();
-    
-        int lastMessageCount = 0;
-        while (currentRoom != "" && state == "chat")
-        {
-            if (messageList.Count != lastMessageCount)
-            {
-                lastMessageCount = messageList.Count;
-                RenderChat();
-            }
             await Task.Delay(100);
+            Console.WriteLine("Still no rooms.");
         }
-    
-        await inputTask;
+
+        if (Client.Token != null) httpClient.AddBearerToken(Client.Token);
+        foreach (var room in Client.JoinedRooms)
+        {
+            Console.WriteLine(room);
+            Console.WriteLine(homeserver + "_matrix/client/v3/rooms/" + room.Id + "/state");
+            string a = await httpClient.GetStringAsync(homeserver + "_matrix/client/v3/rooms/" + room.Id + "/state");
+            JsonElement states = JsonDocument.Parse(a).RootElement;
+            //Console.WriteLine(states);
+            //Console.WriteLine(parsed.RootElement.GetProperty("name"));
+            //Console.WriteLine(a);
+            string? roomName;
+            try
+            {
+                string b = await httpClient.GetStringAsync(homeserver + "_matrix/client/v3/rooms/" + room.Id +
+                                                           "/state/m.room.name");
+                //Console.WriteLine(a);
+                roomName = JsonDocument.Parse(b).RootElement.GetProperty("name").ToString();
+            }
+            catch (HttpRequestException)
+            {
+                roomName = "";
+                foreach (JsonElement roomState in states.EnumerateArray())
+                {
+                    if (roomState.GetProperty("type").GetString() == "m.room.member")
+                    {
+                        string? userid = roomState.GetProperty("sender").GetString();
+                        if (userid == Client.UserId ||
+                            roomState.GetProperty("content").GetProperty("membership").ToString() != "join") continue;
+                        roomName += userid + " ";
+                    }
+                }
+            }
+
+            Rooms.Add(new { instance = room, name = roomName });
+        }
+
+        Rooms = Rooms.OrderBy(f => f.name).ToList();
+        
+
+        string lastState = "menu";
+        while (Running)
+        {
+            if (lastState != State)
+            {
+                if (State == "chat")
+                {
+                    ChatState.Load();
+                    _ = Task.Run(() => ChatState.Messages());
+                    ChatState.RenderChat();
+                }
+            } 
+            
+            if (State == "chat")
+            {
+                await ChatState.Update();
+            } else if (State == "menu")
+            {
+                MenuState.Update();
+            }
+        }
     }
 }
-
-void menuState()
-{
-    while (true)
-    {
-        Console.Clear();
-        int cur = 0;
-        //Console.WriteLine(cur);
-        foreach (var room in rooms)
-        {
-            //Console.WriteLine(cur);
-            if (cur == selected)
-            {
-
-                Console.WriteLine(">" + room.name);
-            }
-            else
-            {
-                Console.WriteLine(room.name);
-            }
-
-            cur += 1;
-        }
-
-        ConsoleKeyInfo input = Console.ReadKey();
-        if (input.Key == ConsoleKey.DownArrow)
-        {
-            selected += 1;
-        }
-        else if (input.Key == ConsoleKey.UpArrow)
-        {
-            selected -= 1;
-        } else if (input.Key == ConsoleKey.Spacebar)
-        {
-            currentRoom = rooms[selected].instance.Id;
-            messageList = new();
-            state = "chat";
-            RenderChat();
-            chatState();
-        } else if (input.Key == ConsoleKey.Escape)
-        {
-            return;
-        }
-
-        selected = Math.Clamp(selected, 0, rooms.Count - 1);
-    }
-}
-
-
-menuState();
