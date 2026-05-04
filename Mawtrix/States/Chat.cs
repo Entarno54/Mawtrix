@@ -1,6 +1,8 @@
-using Mawtrix.Matrix.Sdk.Core.Domain.RoomEvent;
-
 namespace Mawtrix.States;
+
+using Matrix.Sdk.Core.Domain.RoomEvent;
+using Functions;
+
 
 public class Chat
 {
@@ -103,7 +105,7 @@ public class Chat
             try
             {
                 preloadedMessages += 1;
-                if (preloadedMessages > 30)
+                if (preloadedMessages > Console.WindowHeight - 5)
                 {
                     return Task.FromResult(true);
                 }
@@ -121,18 +123,13 @@ public class Chat
         for (var i = history.Count - 1;i>=0; i--)
         {
             var state = history[i];
-            
-            if (state is not TextMessageEvent messageEvent) continue;
-            string senderUserId = messageEvent.SenderUserId;
-            string message = messageEvent.Message;
-            if (!Program.Profiles.ContainsKey(senderUserId))
+
+            string? toMessage = Message.EventToMessage(state);
+
+            if (!string.IsNullOrEmpty(toMessage))
             {
-                //Console.WriteLine("Loading profile "+senderUserId);
-                Program.Profiles[senderUserId] = Program.Client.GetUserProfile(senderUserId).Result;
+                Add(toMessage);
             }
-            //Console.WriteLine("Message added");
-            Add($"{Program.Profiles[senderUserId].displayname} ({senderUserId}): {message}");
-            //_ = Update();
         }
     }
 

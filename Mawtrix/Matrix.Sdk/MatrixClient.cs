@@ -123,6 +123,11 @@ namespace Mawtrix.Matrix.Sdk
 
             IsSyncing = _pollingService.IsSyncing;
         }
+        
+        public MatrixRoom? GetRoom(string roomId)
+        {
+            return _pollingService.GetMatrixRoom(roomId);
+        }
 
         public async Task<CreateRoomResponse> CreateTrustedPrivateRoomAsync(string[] invitedUserIds) =>
             await _roomService.CreateRoomAsync(accessToken!, invitedUserIds, _cts.Token);
@@ -134,6 +139,13 @@ namespace Mawtrix.Matrix.Sdk
                 return new JoinRoomResponse(matrixRoom.Id);
 
             return await _roomService.JoinRoomAsync(accessToken!, roomId, _cts.Token);
+        }
+
+        public async Task<string> GetPublicRoomIdFromAlias(string roomAlias)
+        {
+            GetRoomIdResponse response = await _roomService.GetRoomIdFromAlias(accessToken!, roomAlias, _cts.Token);
+
+            return response.RoomId; //+ roomDomain;
         }
         
         public async Task<RoomService.InviteResult> InviteToRoomAsync(string roomId, string invitedId)

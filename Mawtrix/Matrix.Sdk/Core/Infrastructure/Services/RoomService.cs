@@ -91,9 +91,18 @@ namespace Mawtrix.Matrix.Sdk.Core.Infrastructure.Services
         {
             HttpClient httpClient = CreateHttpClient(accessToken);
 
-            var path = $"{ResourcePath}/rooms/{roomId}/join";
+            var path = $"{ResourcePath}/join/{roomId}";
 
             return await httpClient.PostAsJsonAsync<JoinRoomResponse>(path, null, cancellationToken);
+        }
+
+        public async Task<GetRoomIdResponse> GetRoomIdFromAlias(string accessToken, string roomAlias, CancellationToken cancellationToken)
+        {
+            roomAlias = roomAlias.Replace("#", "%23");
+            HttpClient httpClient = CreateHttpClient(accessToken);
+            var path = $"{ResourcePath}/directory/room/{roomAlias}";
+            
+            return await httpClient.GetAsJsonAsync<GetRoomIdResponse>(path, cancellationToken);
         }
 
 

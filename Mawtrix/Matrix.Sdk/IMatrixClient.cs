@@ -39,6 +39,10 @@ namespace Mawtrix.Matrix.Sdk
         void Stop();
 
         Task<CreateRoomResponse> CreateTrustedPrivateRoomAsync(string[] invitedUserIds);
+        
+        Task<string>  GetPublicRoomIdFromAlias(string roomAlias);
+        
+        MatrixRoom?  GetRoom(string roomId);
 
         Task<JoinRoomResponse> JoinTrustedPrivateRoomAsync(string roomId);
 

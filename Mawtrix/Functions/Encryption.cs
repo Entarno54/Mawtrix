@@ -1,4 +1,4 @@
-namespace Mawtrix;
+namespace Mawtrix.Functions;
 
 using System;
 using System.IO;

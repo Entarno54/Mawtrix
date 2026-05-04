@@ -2,9 +2,9 @@ namespace Mawtrix.States;
 
 public class Menu
 {
-    private static int _selected = 0;
+    private static int _selected;
     
-    public void Update()
+    public async Task Update()
     {
         Console.Clear();
         int cur = 0;
@@ -23,6 +23,7 @@ public class Menu
 
             cur += 1;
         }
+        Console.WriteLine("Press up or down to scroll, press Space to select, ESC to exit, L to join a Public Chat by it's Alias, J to DM a user");
 
         ConsoleKeyInfo input = Console.ReadKey();
         if (input.Key == ConsoleKey.DownArrow)
@@ -41,7 +42,17 @@ public class Menu
         else if (input.Key == ConsoleKey.Escape)
         {
             Program.Running = false;
-            return;
+            Program.Client.Stop();
+        } else if (input.Key == ConsoleKey.D)
+        {
+            Program.State = "direct";
+        } else if (input.Key == ConsoleKey.J)
+        {
+            Program.State = "join";
+        } else if (input.Key == ConsoleKey.L)
+        {
+            await Program.Client.LeaveRoomAsync(Program.Rooms[_selected].instance.Id);
+            Program.Rooms.RemoveAt(_selected);
         }
 
         _selected = Math.Clamp(_selected, 0, Program.Rooms.Count - 1);

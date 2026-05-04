@@ -207,7 +207,8 @@ namespace Mawtrix.Matrix.Sdk.Core.Infrastructure.Services
                     }
                     else
                     {
-                        Console.WriteLine($"Unable to concretize event: {JsonConvert.SerializeObject(roomEvent, Formatting.Indented)}");
+                        //Omg bro who the fuck puts a write like that into a framework that could used by cli apps
+                        //Console.WriteLine($"Unable to concretize event: {JsonConvert.SerializeObject(roomEvent, Formatting.Indented)}");
                     }
 
                     if (ev != null)

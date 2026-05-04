@@ -6,9 +6,8 @@ using Matrix.Sdk.Core.Domain.RoomEvent;
 using Matrix.Sdk.Core.Infrastructure.Extensions;
 using Matrix.Sdk.Core.Infrastructure.Dto.User;
 using States;
-using static Encryption;
+using Functions;
 using DeviceId;
-
 
 
 static class Program
@@ -25,6 +24,8 @@ static class Program
 
     private static readonly Menu MenuState = new Menu();
     private static readonly Chat ChatState = new Chat();
+    private static readonly Direct DirectState = new Direct();
+    private static readonly Join JoinState = new Join();
     
     static async Task Main()
     {
@@ -42,7 +43,7 @@ static class Program
         {
             var data = await File.ReadAllTextAsync(AppDomain.CurrentDomain.BaseDirectory + "/Data");
 
-            var decrypted = Decrypt(data, EncKey.Key, EncKey.Iv);
+            var decrypted = Encryption.Decrypt(data, EncKey.Key, EncKey.Iv);
 
             var realData = JsonDocument.Parse(decrypted).RootElement;
             homeserver = new(realData.GetProperty("homeserver").GetString() ?? "matrix.org");
@@ -128,7 +129,7 @@ static class Program
 
             var ser = JsonSerializer.Serialize(data);
 
-            var encrypted = Encrypt(ser, EncKey.Key, EncKey.Iv);
+            var encrypted = Encryption.Encrypt(ser, EncKey.Key, EncKey.Iv);
 
             await File.WriteAllTextAsync(AppDomain.CurrentDomain.BaseDirectory + "/Data", encrypted);
         }
@@ -144,31 +145,15 @@ static class Program
             {
                 foreach (BaseRoomEvent roomEvent in eventArgs.MatrixRoomEvents)
                 {
-                    //Console.WriteLine($"Type: {roomEvent.GetType().Name}");
-                    if (roomEvent is MembershipEvent)
+                    if (roomEvent.RoomId == CurrentRoom)
                     {
-                        //Console.WriteLine(client.GetRoomName(roomEvent.RoomId));
-                    }
-
-                    if (roomEvent is not TextMessageEvent textMessageEvent)
-                    {
-                        // Console.WriteLine("Not text event");
-                        continue;
-                    }
-
-                    string roomId = textMessageEvent.RoomId;
-                    string senderUserId = textMessageEvent.SenderUserId;
-                    string message = textMessageEvent.Message;
-
-                    if (CurrentRoom == roomId)
-                    {
-                        //Console.WriteLine($"RoomId: {roomId} received message from {senderUserId}: {message}.");
-                        if (!Profiles.ContainsKey(senderUserId))
+                        string? message = Message.EventToMessage(roomEvent);
+                        if (!string.IsNullOrEmpty(message))
                         {
-                            Profiles[senderUserId] = Client.GetUserProfile(senderUserId).Result;
+                            ChatState.Add(message);
                         }
-                        ChatState.Add(
-                            $"{Profiles[senderUserId].displayname} ({senderUserId}): {message}");
+                    } else if (roomEvent is MembershipEvent membershipEvent)
+                    {
                     }
                 }
             };
@@ -228,11 +213,18 @@ static class Program
         {
             if (lastState != State)
             {
+                lastState = State;
                 if (State == "chat")
                 {
                     ChatState.Load();
                     _ = Task.Run(() => ChatState.Messages());
                     ChatState.RenderChat();
+                } else if (State == "direct")
+                {
+                    DirectState.Load();
+                }else if (State == "join")
+                {
+                    JoinState.Load();
                 }
             } 
             
@@ -241,7 +233,13 @@ static class Program
                 await ChatState.Update();
             } else if (State == "menu")
             {
-                MenuState.Update();
+                await MenuState.Update();
+            } else if (State == "direct")
+            {
+                await DirectState.Update();
+            } else if (State == "join")
+            {
+                await JoinState.Update();
             }
         }
     }
