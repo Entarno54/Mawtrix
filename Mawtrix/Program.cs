@@ -138,7 +138,7 @@ static class Program
         {
             string deviceId = new DeviceIdBuilder().AddMachineName().ToString();
             
-            await Client.LoginAsync(homeserver, login, password, deviceId);
+            await Client.LoginAsync(homeserver, login, password, "SillyLittleThing");
             
 
             Client.OnMatrixRoomEventsReceived += (_, eventArgs) =>

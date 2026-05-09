@@ -23,36 +23,42 @@ public class Menu
 
             cur += 1;
         }
-        Console.WriteLine("Press up or down to scroll, press Space to select, ESC to exit, L to join a Public Chat by it's Alias, J to DM a user");
+        Console.WriteLine("Press up or down to scroll, press Space|Enter to select, ESC to exit, L to join a Public Chat by it's Alias, J to DM a user");
 
         ConsoleKeyInfo input = Console.ReadKey();
-        if (input.Key == ConsoleKey.DownArrow)
+        switch (input.Key)
         {
-            _selected += 1;
-        }
-        else if (input.Key == ConsoleKey.UpArrow)
-        {
-            _selected -= 1;
-        }
-        else if (input.Key == ConsoleKey.Spacebar)
-        {
-            Program.CurrentRoom = Program.Rooms[_selected].instance.Id;
-            Program.State = "chat";
-        }
-        else if (input.Key == ConsoleKey.Escape)
-        {
-            Program.Running = false;
-            Program.Client.Stop();
-        } else if (input.Key == ConsoleKey.D)
-        {
-            Program.State = "direct";
-        } else if (input.Key == ConsoleKey.J)
-        {
-            Program.State = "join";
-        } else if (input.Key == ConsoleKey.L)
-        {
-            await Program.Client.LeaveRoomAsync(Program.Rooms[_selected].instance.Id);
-            Program.Rooms.RemoveAt(_selected);
+            case ConsoleKey.DownArrow:
+                _selected += 1;
+                break;
+            
+            case ConsoleKey.UpArrow:
+                _selected -= 1;
+                break;
+            
+            case ConsoleKey.Spacebar or ConsoleKey.Enter:
+                Program.CurrentRoom = Program.Rooms[_selected].instance.Id;
+                Program.State = "chat";
+                break;
+            
+            case  ConsoleKey.Escape:
+                Program.Running = false;
+                Program.Client.Stop();
+                break;
+            
+            case ConsoleKey.D:
+                Program.State = "direct";
+                break;
+            
+            case ConsoleKey.J:
+                Program.State = "join";
+                break;
+            
+            case ConsoleKey.L:
+                await Program.Client.LeaveRoomAsync(Program.Rooms[_selected].instance.Id);
+                Program.Rooms.RemoveAt(_selected);
+                break;
+            
         }
 
         _selected = Math.Clamp(_selected, 0, Program.Rooms.Count - 1);

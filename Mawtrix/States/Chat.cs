@@ -30,8 +30,8 @@ public class Chat
         if (_canType)
         {
             _canType = false;
-            _ = Program.Client.SendTypingSignal(Program.CurrentRoom, new TimeSpan(0, 0, 0, 10));
-            await Task.Delay(11000);
+            await Program.Client.SendTypingSignal(Program.CurrentRoom, new TimeSpan(0, 0, 0, 10));
+            await Task.Delay(5000);
             _canType = true;
         }
     }
@@ -40,33 +40,37 @@ public class Chat
     {
         while (true)
         {
-            var key = Console.ReadKey(true);
+            var key = Console.ReadKey();
 
-            if (key.Key == ConsoleKey.Enter)
+            switch (key.Key)
             {
-                if (!string.IsNullOrWhiteSpace(_currentInput))
-                {
+                case ConsoleKey.Enter:
+                    if (string.IsNullOrWhiteSpace(_currentInput)) break;
+                    
                     await Program.Client.SendMessageAsync(Program.CurrentRoom, _currentInput);
                     _currentInput = "";
                     RenderChat();
-                }
-            }
-            else if (key.Key == ConsoleKey.Escape)
-            {
-                Program.CurrentRoom = "";
-                Program.State = "menu";
-                break;
-            }
-            else if (key.Key == ConsoleKey.Backspace && _currentInput.Length > 0)
-            {
-                _ = SendType();
-                _currentInput = _currentInput.Substring(0, _currentInput.Length - 1);
-                RenderChat();
-            }
-            else if (!char.IsControl(key.KeyChar))
-            {
-                _currentInput += key.KeyChar;
-                RenderChat();
+                    break;
+                
+                case ConsoleKey.Backspace:
+                    if(_currentInput.Length == 0) break;
+                    
+                    _currentInput = _currentInput.Substring(0, _currentInput.Length - 1);
+                    RenderChat();
+                    break;
+                
+                case ConsoleKey.Escape:
+                    Program.CurrentRoom = "";
+                    Program.State = "menu";
+                    return;
+                
+                default:
+                    if (char.IsControl(key.KeyChar)) break;
+                    
+                    _ = SendType();
+                    _currentInput += key.KeyChar;
+                    RenderChat();
+                    break;
             }
         }
     }
