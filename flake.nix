@@ -18,7 +18,7 @@
       in {
         packages.default = pkgs.buildDotnetModule {
           pname = "mawtrix";
-          version = "0.1.0";
+          version = "0.7";
           src = ./.;
           projectFile = "Mawtrix/Mawtrix.csproj";
           nugetDeps = ./deps.json;
