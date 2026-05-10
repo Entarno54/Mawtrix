@@ -1,0 +1,32 @@
+name: Build Mawtrix
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+      - name: Zip Directory Windows
+        run: zip -r Mawtrix-${{ runner.os }}.zip Mawtrix/bin/Release/net8.0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mawtrix-${{ runner.os }}
+          path: Mawtrix/bin/Release/Mawtrix-${{runner.os}}.zip
