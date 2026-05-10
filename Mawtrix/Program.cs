@@ -9,7 +9,6 @@ using States;
 using Functions;
 using DeviceId;
 
-
 static class Program
 {
     private static readonly MatrixClientFactory Factory = new MatrixClientFactory();
@@ -17,8 +16,8 @@ static class Program
     public static string State = "menu";
     public static List<dynamic> Rooms = new();
     public static string CurrentRoom = "";
-    
-    public static readonly Dictionary<string, MatrixProfile> Profiles = new ();
+
+    public static readonly Dictionary<string, MatrixProfile> Profiles = new();
 
     public static bool Running = true;
 
@@ -26,7 +25,9 @@ static class Program
     private static readonly Chat ChatState = new Chat();
     private static readonly Direct DirectState = new Direct();
     private static readonly Join JoinState = new Join();
-    
+
+    public static HttpClient HttpClient = new HttpClient();
+
     static async Task Main()
     {
         Console.WriteLine("Hello");
@@ -36,8 +37,6 @@ static class Program
         Uri homeserver;
         string? login = "";
         string? password = "";
-
-        HttpClient httpClient = new HttpClient();
 
         if (federationTest == "login")
         {
@@ -57,7 +56,7 @@ static class Program
                 Console.WriteLine("Wrong data");
                 return;
             }
-            
+
             await Client.LoginAsync(homeserver, password, login);
         }
         else
@@ -66,7 +65,7 @@ static class Program
             try
             {
                 string responseBody =
-                    await httpClient.GetStringAsync("https://" + federationTest + "/_matrix/federation/v1/version");
+                    await HttpClient.GetStringAsync("https://" + federationTest + "/_matrix/federation/v1/version");
                 Console.WriteLine(responseBody);
 
                 homeserver = new("https://" + federationTest);
@@ -76,7 +75,7 @@ static class Program
                 try
                 {
                     string responseBody =
-                        await httpClient.GetStringAsync("https://" + federationTest + "/.well-known/matrix/server");
+                        await HttpClient.GetStringAsync("https://" + federationTest + "/.well-known/matrix/server");
                     Console.WriteLine(responseBody);
 
                     var parsed = JsonDocument.Parse(responseBody);
@@ -85,7 +84,7 @@ static class Program
                     if (server.GetString() == null) return;
 
                     // Still in the same try scope so if it errors out it'll catch the exception too
-                    await httpClient.GetStringAsync("https://" + server.GetString());
+                    await HttpClient.GetStringAsync("https://" + server.GetString());
 
                     homeserver = new("https://" + server.GetString());
                 }
@@ -133,9 +132,9 @@ static class Program
 
 
             if (string.IsNullOrEmpty(password)) return;
-            
+
             string deviceId = new DeviceIdBuilder().AddMachineName().ToString();
-            
+
             await Client.LoginAsync(homeserver, login, password, deviceId);
 
             var data = new { Client.BaseAddress, Client.Token, Client.UserId };
@@ -158,7 +157,8 @@ static class Program
                         {
                             ChatState.Add(message);
                         }
-                    } else if (roomEvent is MembershipEvent membershipEvent)
+                    }
+                    else if (roomEvent is MembershipEvent membershipEvent)
                     {
                     }
                 }
@@ -180,12 +180,12 @@ static class Program
             Console.WriteLine("Rooms still loading.");
         }
 
-        if (Client.Token != null) httpClient.AddBearerToken(Client.Token);
+        if (Client.Token != null) HttpClient.AddBearerToken(Client.Token);
         foreach (var room in Client.JoinedRooms)
         {
             Console.WriteLine(room);
             Console.WriteLine(homeserver + "_matrix/client/v3/rooms/" + room.Id + "/state");
-            string a = await httpClient.GetStringAsync(homeserver + "_matrix/client/v3/rooms/" + room.Id + "/state");
+            string a = await HttpClient.GetStringAsync(homeserver + "_matrix/client/v3/rooms/" + room.Id + "/state");
             JsonElement states = JsonDocument.Parse(a).RootElement;
             //Console.WriteLine(states);
             //Console.WriteLine(parsed.RootElement.GetProperty("name"));
@@ -193,7 +193,7 @@ static class Program
             string? roomName;
             try
             {
-                string b = await httpClient.GetStringAsync(homeserver + "_matrix/client/v3/rooms/" + room.Id +
+                string b = await HttpClient.GetStringAsync(homeserver + "_matrix/client/v3/rooms/" + room.Id +
                                                            "/state/m.room.name");
                 //Console.WriteLine(a);
                 roomName = JsonDocument.Parse(b).RootElement.GetProperty("name").ToString();
@@ -217,7 +217,7 @@ static class Program
         }
 
         Rooms = Rooms.OrderBy(f => f.name).ToList();
-        
+
 
         string lastState = "menu";
         while (Running)
@@ -230,25 +230,30 @@ static class Program
                     ChatState.Load();
                     _ = Task.Run(() => ChatState.Messages());
                     ChatState.RenderChat();
-                } else if (State == "direct")
+                }
+                else if (State == "direct")
                 {
                     DirectState.Load();
-                }else if (State == "join")
+                }
+                else if (State == "join")
                 {
                     JoinState.Load();
                 }
-            } 
-            
+            }
+
             if (State == "chat")
             {
                 await ChatState.Update();
-            } else if (State == "menu")
+            }
+            else if (State == "menu")
             {
                 await MenuState.Update();
-            } else if (State == "direct")
+            }
+            else if (State == "direct")
             {
                 await DirectState.Update();
-            } else if (State == "join")
+            }
+            else if (State == "join")
             {
                 await JoinState.Update();
             }
