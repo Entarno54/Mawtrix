@@ -9,11 +9,16 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Clean .NET environment
+        run: sudo rm -rf /usr/share/dotnet
+      
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
