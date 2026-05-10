@@ -9,7 +9,7 @@ namespace Mawtrix.Functions;
 
 public static class Message
 {
-    private static readonly float TargetHeight = 500f;
+    private static readonly float TargetHeight = 350f;
     
     public static string? EventToMessage(BaseRoomEvent roomEvent) 
     {

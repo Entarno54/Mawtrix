@@ -109,7 +109,7 @@ public class Chat
             try
             {
                 preloadedMessages += 1;
-                if (preloadedMessages > Console.WindowHeight - 5)
+                if (preloadedMessages > 20)
                 {
                     return Task.FromResult(true);
                 }
@@ -139,6 +139,10 @@ public class Chat
 
     public void Add(string message)
     {
+        if (_messageList.Count + 1 > 20)
+        {
+            _messageList.RemoveAt(0);
+        }
         _messageList.Add(message);
         RenderChat();
     }
