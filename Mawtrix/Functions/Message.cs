@@ -1,5 +1,7 @@
 using Mawtrix.Matrix.Sdk.Core.Domain.RoomEvent;
 using Mawtrix.Matrix.Sdk.Core.Infrastructure.Dto.Event;
+using Mawtrix.Matrix.Sdk.Core.Infrastructure.Dto.Sync;
+using Mawtrix.Matrix.Sdk.Core.Infrastructure.Dto.Sync.Event.Room.State;
 using ImageMessageEvent = Mawtrix.Matrix.Sdk.Core.Domain.RoomEvent.ImageMessageEvent;
 
 namespace Mawtrix.Functions;
@@ -33,7 +35,7 @@ public static class Message
             return $"{Program.Profiles[senderUserId].displayname} ({senderUserId}): //SENT AN IMAGE//";
         }
 
-        if (roomEvent is InviteToRoomEvent inviteEvent)
+        if (roomEvent is MembershipEvent inviteEvent)
         {
             string senderUserId = inviteEvent.SenderUserId;
             

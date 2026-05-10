@@ -140,5 +140,6 @@ public class Chat
     public void Add(string message)
     {
         _messageList.Add(message);
+        RenderChat();
     }
 }

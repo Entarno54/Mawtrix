@@ -34,21 +34,31 @@ static class Program
         string? federationTest = Console.ReadLine();
 
         Uri homeserver;
-        string? login;
+        string? login = "";
         string? password = "";
 
         HttpClient httpClient = new HttpClient();
 
         if (federationTest == "login")
         {
-            var data = await File.ReadAllTextAsync(AppDomain.CurrentDomain.BaseDirectory + "/Data");
+            var data = Storage.LoadToken();
+            if (data == null)
+            {
+                Console.WriteLine("No Data");
+                return;
+            }
 
-            var decrypted = Encryption.Decrypt(data, EncKey.Key, EncKey.Iv);
-
-            var realData = JsonDocument.Parse(decrypted).RootElement;
-            homeserver = new(realData.GetProperty("homeserver").GetString() ?? "matrix.org");
-            login = realData.GetProperty("login").GetString();
-            password = realData.GetProperty("password").GetString();
+            var realData = JsonDocument.Parse(data).RootElement;
+            homeserver = new(realData.GetProperty("BaseAddress").GetString() ?? "matrix.org");
+            password = realData.GetProperty("Token").GetString();
+            login = realData.GetProperty("UserId").GetString();
+            if (password == null)
+            {
+                Console.WriteLine("Wrong data");
+                return;
+            }
+            
+            await Client.LoginAsync(homeserver, password, login);
         }
         else
         {
@@ -123,24 +133,20 @@ static class Program
 
 
             if (string.IsNullOrEmpty(password)) return;
-
-
-            var data = new { homeserver, password, login };
-
-            var ser = JsonSerializer.Serialize(data);
-
-            var encrypted = Encryption.Encrypt(ser, EncKey.Key, EncKey.Iv);
-
-            await File.WriteAllTextAsync(AppDomain.CurrentDomain.BaseDirectory + "/Data", encrypted);
-        }
-
-        if (login != null && password != null)
-        {
+            
             string deviceId = new DeviceIdBuilder().AddMachineName().ToString();
             
             await Client.LoginAsync(homeserver, login, password, deviceId);
-            
 
+            var data = new { Client.BaseAddress, Client.Token, Client.UserId };
+
+            var ser = JsonSerializer.Serialize(data);
+
+            Storage.SaveToken(ser);
+        }
+
+        if (Client.IsLoggedIn)
+        {
             Client.OnMatrixRoomEventsReceived += (_, eventArgs) =>
             {
                 foreach (BaseRoomEvent roomEvent in eventArgs.MatrixRoomEvents)
@@ -157,16 +163,21 @@ static class Program
                     }
                 }
             };
-            Console.WriteLine("Successfully logged in as " + login);
-        }
+            Console.WriteLine("\nSuccessfully logged in as " + Client.UserId);
 
-        Client.Start();
+            Client.Start();
+        }
+        else
+        {
+            Console.WriteLine("\nLogin Failed");
+            return;
+        }
 
 //Waiting for the rooms to load
         while (Client.JoinedRooms.Length == 0)
         {
-            await Task.Delay(100);
-            Console.WriteLine("Still no rooms.");
+            await Task.Delay(1000);
+            Console.WriteLine("Rooms still loading.");
         }
 
         if (Client.Token != null) httpClient.AddBearerToken(Client.Token);
