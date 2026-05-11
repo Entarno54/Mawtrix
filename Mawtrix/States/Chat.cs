@@ -1,6 +1,6 @@
 namespace Mawtrix.States;
 
-using Matrix.Sdk.Core.Domain.RoomEvent;
+using Meowtrix.Sdk.Core.Domain.RoomEvent;
 using Functions;
 
 

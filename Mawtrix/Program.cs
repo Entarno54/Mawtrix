@@ -1,10 +1,11 @@
-﻿namespace Mawtrix;
+﻿using System.Net.Http.Headers;
 
-using Matrix.Sdk;
+namespace Mawtrix;
+
+using Meowtrix.Sdk;
 using System.Text.Json;
-using Matrix.Sdk.Core.Domain.RoomEvent;
-using Matrix.Sdk.Core.Infrastructure.Extensions;
-using Matrix.Sdk.Core.Infrastructure.Dto.User;
+using Meowtrix.Sdk.Core.Domain.RoomEvent;
+using Meowtrix.Sdk.Core.Infrastructure.Dto.User;
 using States;
 using Functions;
 using DeviceId;
@@ -21,12 +22,12 @@ static class Program
 
     public static bool Running = true;
 
-    private static readonly Menu MenuState = new Menu();
-    private static readonly Chat ChatState = new Chat();
-    private static readonly Direct DirectState = new Direct();
-    private static readonly Join JoinState = new Join();
+    private static readonly Menu MenuState = new();
+    private static readonly Chat ChatState = new();
+    private static readonly Direct DirectState = new();
+    private static readonly Join JoinState = new();
 
-    public static HttpClient HttpClient = new HttpClient();
+    public static readonly HttpClient HttpClient = new();
 
     static async Task Main()
     {
@@ -35,7 +36,7 @@ static class Program
         string? federationTest = Console.ReadLine();
 
         Uri homeserver;
-        string? login = "";
+        string? login;
         string? password = "";
 
         if (federationTest == "login")
@@ -180,7 +181,7 @@ static class Program
             Console.WriteLine("Rooms still loading.");
         }
 
-        if (Client.Token != null) HttpClient.AddBearerToken(Client.Token);
+        if (Client.Token != null) HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Client.Token);
         foreach (var room in Client.JoinedRooms)
         {
             Console.WriteLine(room);

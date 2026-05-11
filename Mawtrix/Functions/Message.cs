@@ -1,6 +1,6 @@
-using Mawtrix.Matrix.Sdk.Core.Domain.RoomEvent;
+using Meowtrix.Sdk.Core.Domain.RoomEvent;
 using SixLabors.ImageSharp;
-using ImageMessageEvent = Mawtrix.Matrix.Sdk.Core.Domain.RoomEvent.ImageMessageEvent;
+using ImageMessageEvent = Meowtrix.Sdk.Core.Domain.RoomEvent.ImageMessageEvent;
 using SixLabors.ImageSharp.Processing;
 using SixPix;
 using Image = SixLabors.ImageSharp.Image;

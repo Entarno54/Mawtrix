@@ -1,7 +1,7 @@
 namespace Mawtrix.States;
 
-using Matrix.Sdk.Core.Domain.MatrixRoom;
-using Matrix.Sdk.Core.Infrastructure.Dto.Room.Create;
+using Meowtrix.Sdk.Core.Domain.MatrixRoom;
+using Meowtrix.Sdk.Core.Infrastructure.Dto.Room.Create;
 
 public class Direct
 {

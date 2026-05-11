@@ -1,10 +1,6 @@
 namespace Mawtrix.States;
 
-using System.Net;
-using System.Text.Json;
-using Mawtrix.Matrix.Sdk.Core.Domain.MatrixRoom;
-using Mawtrix.Matrix.Sdk.Core.Infrastructure.Dto.Sync;
-using Matrix.Sdk.Core.Infrastructure.Dto.Room.Join;
+using Meowtrix.Sdk.Core.Domain.MatrixRoom;
 
 public class Join
 {
